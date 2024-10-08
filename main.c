@@ -1,9 +1,8 @@
 #include <ncurses.h> 
 #include <string.h> 
 
-#define NUM_OPTIONS 4
+#define NUM_OPTIONS 3
 const char* menu_options[NUM_OPTIONS] = {
-    "Main Menu",
     "Beacon Detection",
     "Historical Data Viewer", 
     "Notifications and Alerts"
@@ -54,7 +53,7 @@ int main() {
         {10, 4, 24, 3},
         {10, 8, 24, 3},
         {10, 12, 24, 3},
-        {10, 16, 24, 3}
+
     };
     MEVENT event;
     int highlight = 0;
@@ -83,10 +82,10 @@ int main() {
                     if (event.bstate & BUTTON1_CLICKED) {
                         for (int i = 0; i < NUM_OPTIONS; i++) {
                             if (isClick(buttons[i], event.x, event.y)) {
-                                // Unhighlight the previously highlighted button
+                                // Unhighlight prev
                                 draw_button(buttons[highlight].y, buttons[highlight].x, menu_options[highlight], false);
 
-                                // Highlight the newly clicked button
+                                // Highlight new
                                 highlight = i;
                                 draw_button(buttons[highlight].y, buttons[highlight].x, menu_options[highlight], true);
                                 refresh();  // Update the screen
