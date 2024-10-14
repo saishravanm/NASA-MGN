@@ -209,37 +209,51 @@ int main() {
     mousemask(ALL_MOUSE_EVENTS, NULL);
     curs_set(1);
     
-    // Draw the menu initially
-  
+    //Manage which screen we're on
     int current_screen = 0;
     // Main loop
     while (1) {
+
+        //main menu if current_screen = 0
         if(current_screen == 0){
         clear();
         display_mm(main_menu_buttons);
         }
         ch = getch();
+        //check which menu option is pressed
         if (ch == KEY_MOUSE && getmouse(&event) == OK) { 
             if (event.bstate & BUTTON1_RELEASED) {
+
+                //check whether the main menu buttons/back button is pressed
                 int clicked_button = check_mm_press(event, main_menu_buttons);
                 int clicked_back = check_back_press(event, back_button);
+
+                //send back to home screen if back button is pressed
                 if(clicked_back == 1){
                         refresh();
                         current_screen = 0;
                         continue;
                     }
                 current_screen = clicked_button;
+
+                //beacon detection screen
                 if (current_screen == 1) {
                     clear();  // Clear the screen
                     mvprintw(0, 0, "You clicked 'Beacon Detection'!");
                     send_alert();
                     refresh();
-                }if (current_screen == 2) {
+                }
+                
+                //kml viewer screen
+                if (current_screen == 2) {
                     clear();
                     //mvprintw(0, 0, "You clicked 'Historical Data Viewer'!");
                     list_kml("./kml_files");
                     refresh();
-                }if (current_screen == 3) {
+                }
+                
+                //view past notifications/alerts? idk
+                if (current_screen == 3) {
                     clear();
                     mvprintw(0, 0, "You clicked 'Notifications and Alerts'!");
                     refresh();
