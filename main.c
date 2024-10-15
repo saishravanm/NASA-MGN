@@ -132,16 +132,33 @@ void play_sound(const char *sound_file){
 
 }
 //send an alert with sound if a signal is found 
-void send_alert(){
-    play_sound("./sound_files/sarsat_alert_sound.wav");
-}
+
 //send short data burst if a beacon is detected 
-void short_data_burst(char* countryCode, int* hexID, int* encodedLocation, time_t* timeReceived){
-    for(int i = 0; i < NUM_FIELDS; i++)
-    {
-        draw_button(notification_buttons[i].y,notification_buttons[i].x, notification_message[i] ,true);
+void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t timeReceived){
+    
+    
+        //print Country Code
+            draw_button(notification_buttons[0].y,notification_buttons[0].x, notification_message[0] ,true);
+            mvprintw(notification_buttons[0].y, notification_buttons[0].x+15, ": %s", countryCode);
+
+        // print Hex ID
+            draw_button(notification_buttons[1].y,notification_buttons[1].x, notification_message[1] ,true);
+            mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, ": %d", hexID);
+
+            //Encoded Location
+            draw_button(notification_buttons[2].y,notification_buttons[2].x, notification_message[2] ,true);
+            mvprintw(notification_buttons[2].y, notification_buttons[2].x+12, ": %d", encodedLocation);
+        
+            //Time Recieved 
+            draw_button(notification_buttons[3].y,notification_buttons[3].x, notification_message[3] ,true);
+
+            struct tm* time_info = localtime(&timeReceived);
+            char time_str[128];
+            strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_info);
+            mvprintw(notification_buttons[3].y, notification_buttons[3].x+19, ": %s", time_str);
+        
         refresh();
-    }
+    
     
     draw_button(back_button[0].y,back_button[0].x, back_text[0] ,false);
 
@@ -197,7 +214,11 @@ void list_kml(const char *path){
 
 }
 
-
+void send_alert(){
+    time_t current_time = time(NULL);
+    short_data_burst("US", 123456, 789012, current_time);
+    //play_sound("./sound_files/sarsat_alert_sound.wav");
+}
 int main() {
     MEVENT event;
     int ch;
