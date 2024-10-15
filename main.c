@@ -156,8 +156,34 @@ void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t 
             char time_str[128];
             strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_info);
             mvprintw(notification_buttons[3].y, notification_buttons[3].x+19, ": %s", time_str);
-        
-        refresh();
+
+            const char* dir_path = "./notifications/";
+            struct stat st = {0};
+            if(stat(dir_path, &st) == -1){
+                if(mkdir(dir_path, 0700) != 0){
+                    perror("unable to create directory");
+                    return;
+                }
+            }
+
+
+
+            char file_path[256];
+            snprintf(file_path, sizeof(file_path), "%s%s", dir_path, time_str);
+
+            FILE *file = fopen(file_path, "a");
+            if(file == NULL){
+                perror("Unable to open file");
+                return;
+            }
+            fprintf(file, "%s: %s\n", notification_message[0], countryCode);
+            fprintf(file, "%s: %d\n", notification_message[1], hexID);
+            fprintf(file, "%s: %d\n", notification_message[2], encodedLocation);
+            fprintf(file, "%s: %s\n", notification_message[3], time_str);
+
+            fclose(file);
+
+            refresh();
     
     
     draw_button(back_button[0].y,back_button[0].x, back_text[0] ,false);
@@ -169,7 +195,7 @@ void beacon_search(){
 
 }
 
-void list_kml(const char *path){
+void list_files(const char *path){
     struct dirent *entry; //holds directory
     struct stat file_stat; //structure to hold file information 
     
@@ -269,14 +295,16 @@ int main() {
                 if (current_screen == 2) {
                     clear();
                     //mvprintw(0, 0, "You clicked 'Historical Data Viewer'!");
-                    list_kml("./kml_files");
+                    list_files("./kml_files");
                     refresh();
                 }
                 
                 //view past notifications/alerts? idk
                 if (current_screen == 3) {
                     clear();
-                    mvprintw(0, 0, "You clicked 'Notifications and Alerts'!");
+                    //mvprintw(0, 0, "You clicked 'Notifications and Alerts'!");
+                    list_files("./notifications");
+
                     refresh();
                 }
             }
