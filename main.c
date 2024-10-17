@@ -23,11 +23,15 @@ const char* menu_options[NUM_OPTIONS] = {
     "Notifications and Alerts"
 };
 
-const char* notification_message[NUM_FIELDS] = {
+const char* sdb_text[NUM_FIELDS] = {
     "Country Code",
     "Beacon Hex ID", 
     "Encoded Location", 
     "Time Recieved"
+};
+
+const char* notification_text[1] = {
+    "Beacon Found!"
 };
 
 const char* back_text[1] = {
@@ -118,7 +122,12 @@ int check_back_press(MEVENT event, Button* buttons){
     }
     return 0; 
 }
-
+int is_notif_pressed(MEVENT event, Button *button){
+    if(isClick(button[0], event.x, event.y)){
+        return 1;
+    }
+    return 0;
+}
 void play_sound(const char *sound_file){
     char command[256];
     snprintf(command, sizeof(command), "aplay %s", sound_file);
@@ -126,7 +135,7 @@ void play_sound(const char *sound_file){
     int result = system(command);
 
     if(result != 0){
-        printw("Failed top lay sound: %s\n", sound_file);
+        printw("Failed to play sound: %s\n", sound_file);
     }
     printw("played sound!");
 
@@ -138,24 +147,24 @@ void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t 
     
     
         //print Country Code
-            draw_button(notification_buttons[0].y,notification_buttons[0].x, notification_message[0] ,true);
-            mvprintw(notification_buttons[0].y, notification_buttons[0].x+15, ": %s", countryCode);
+            draw_button(notification_buttons[0].y,notification_buttons[0].x, sdb_text[0] ,true);
+            mvprintw(notification_buttons[0].y, notification_buttons[0].x+15, "%s", countryCode);
 
         // print Hex ID
-            draw_button(notification_buttons[1].y,notification_buttons[1].x, notification_message[1] ,true);
-            mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, ": %d", hexID);
+            draw_button(notification_buttons[1].y,notification_buttons[1].x, sdb_text[1] ,true);
+            mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%d", hexID);
 
             //Encoded Location
-            draw_button(notification_buttons[2].y,notification_buttons[2].x, notification_message[2] ,true);
-            mvprintw(notification_buttons[2].y, notification_buttons[2].x+12, ": %d", encodedLocation);
+            draw_button(notification_buttons[2].y,notification_buttons[2].x, sdb_text[2] ,true);
+            mvprintw(notification_buttons[2].y, notification_buttons[2].x+12, "%d", encodedLocation);
         
             //Time Recieved 
-            draw_button(notification_buttons[3].y,notification_buttons[3].x, notification_message[3] ,true);
+            draw_button(notification_buttons[3].y,notification_buttons[3].x, sdb_text[3] ,true);
 
             struct tm* time_info = localtime(&timeReceived);
             char time_str[128];
             strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", time_info);
-            mvprintw(notification_buttons[3].y, notification_buttons[3].x+19, ": %s", time_str);
+            mvprintw(notification_buttons[3].y, notification_buttons[3].x+19, "%s", time_str);
 
             const char* dir_path = "./notifications/";
             struct stat st = {0};
@@ -167,6 +176,7 @@ void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t 
             }
 
 
+            //write data burst to file
 
             char file_path[256];
             snprintf(file_path, sizeof(file_path), "%s%s", dir_path, time_str);
@@ -176,10 +186,10 @@ void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t 
                 perror("Unable to open file");
                 return;
             }
-            fprintf(file, "%s: %s\n", notification_message[0], countryCode);
-            fprintf(file, "%s: %d\n", notification_message[1], hexID);
-            fprintf(file, "%s: %d\n", notification_message[2], encodedLocation);
-            fprintf(file, "%s: %s\n", notification_message[3], time_str);
+            fprintf(file, "%s: %s\n", sdb_text[0], countryCode);
+            fprintf(file, "%s: %d\n", sdb_text[1], hexID);
+            fprintf(file, "%s: %d\n", sdb_text[2], encodedLocation);
+            fprintf(file, "%s: %s\n", sdb_text[3], time_str);
 
             fclose(file);
 
@@ -190,9 +200,38 @@ void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t 
 
 }
 
+void send_data_burst(){
+    time_t current_time = time(NULL);
+    short_data_burst("US", 123456, 789012, current_time);
+}
+
 //search for a beacon
 void beacon_search(){
+    //call notification and send_data_burst
+}
 
+//display notification
+void notification(char* frequency,int duration_seconds, int flash_count, char* sound_file){
+    int delay_ms = duration_seconds * 1000 / flash_count;
+    int h = true;
+    
+    char freq_label[1024]; 
+    snprintf(freq_label, sizeof(freq_label), "%s mHz beacon found", frequency);
+
+    char sf[1024];
+    //snprintf(sf, sizeof(sf),"./sound_files/%s.wav",sound_file);
+
+    play_sound(sf);
+    for(int i = 0; i < flash_count; i++){
+        draw_button(8, 24, freq_label, h);
+        refresh(); 
+        napms(delay_ms);
+        h = !h;
+    }
+    clear();
+    if(strcmp(frequency,"406.025") == 0){
+        send_data_burst();
+    }
 }
 
 void list_files(const char *path){
@@ -240,11 +279,7 @@ void list_files(const char *path){
 
 }
 
-void send_alert(){
-    time_t current_time = time(NULL);
-    short_data_burst("US", 123456, 789012, current_time);
-    //play_sound("./sound_files/sarsat_alert_sound.wav");
-}
+
 int main() {
     MEVENT event;
     int ch;
@@ -282,12 +317,12 @@ int main() {
                         continue;
                     }
                 current_screen = clicked_button;
-
                 //beacon detection screen
                 if (current_screen == 1) {
                     clear();  // Clear the screen
-                    mvprintw(0, 0, "You clicked 'Beacon Detection'!");
-                    send_alert();
+                    //mvprintw(0, 0, "You clicked 'Beacon Detection'!");
+                    //send_alert();
+                    notification("406.025",2,20,"sarsat_alert_sound");
                     refresh();
                 }
                 
