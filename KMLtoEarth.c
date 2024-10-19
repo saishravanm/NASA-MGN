@@ -6,6 +6,8 @@
 
 
 //README
+//*Had issues with compiling, edited cpp properties, not sure if I should have included in staged changes
+
 //This program is designed to list all KML files in the current directory, 
 //prompt the user to select a KML file, 
 //and then prompt the user to choose between saving the file locally or opening it in Google Earth.
