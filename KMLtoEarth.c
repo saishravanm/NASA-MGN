@@ -64,7 +64,7 @@ void saveLocally(const char *filename) {
     system(command);
 }
 
-//
+//DONE
 // Function to open the file in Google Earth via CHROME
 void openInChromeGoogleEarth(const char *filename) {
     char command[512];
