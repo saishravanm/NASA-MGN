@@ -5,7 +5,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
-
+#include "kml_generation.c"
 
 
 #define NUM_OPTIONS 3
@@ -128,6 +128,8 @@ int is_notif_pressed(MEVENT event, Button *button){
     }
     return 0;
 }
+
+//play sound given sound file
 void play_sound(const char *sound_file){
     char command[256];
     snprintf(command, sizeof(command), "aplay %s", sound_file);
@@ -140,9 +142,8 @@ void play_sound(const char *sound_file){
     printw("played sound!");
 
 }
-//send an alert with sound if a signal is found 
 
-//send short data burst if a beacon is detected 
+//send short data burst
 void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t timeReceived){
     
     
@@ -200,18 +201,44 @@ void short_data_burst(char* countryCode, int hexID, int encodedLocation, time_t 
 
 }
 
+//TEST FUNCTION TO MAKE SURE EVERYTHING WORKS
 void send_data_burst(){
     time_t current_time = time(NULL);
+
+    //Generate data burst display
     short_data_burst("US", 123456, 789012, current_time);
+
+    //convert current_time to string for kml file name
+    struct tm* time_info = localtime(&current_time);
+    char time_str[128];
+    strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S.kml", time_info);
+    
+    //generate KML
+    generate_kml(time_str,32.7767,-96.7970,"US","Beacon12345",current_time);
+    printw("KML Generated!");
+
 }
 
 //search for a beacon
 void beacon_search(){
-    //call notification and send_data_burst
+    //call mihir's search functions -> if 406.025 then return hex packet, if 121.65 then return True or False
+    //if we find a 406.025, call hex decoder, then notification 
+    //call hex_decode on hex packet 
+        //hex_decode function 1 -> should return the country code, beacon hex id, encoded location, and time recieved 
+        //hex_decode function 2 -> should return the decoded latitude, longitude, country code, and beacon id, and timestamp
+    
+    //if 406.025 found (example)
+    //notification("406.025",2,20,"sarsat_alert_sound","US", 123456, 789012, current_time);
+    //else if 121.65 found
+    //notification("121.65",2,20,"sarsat_alert_sound");
+
+    //then we call Taaha's KML generate function using hex_decode function 2
+
+
 }
 
 //display notification
-void notification(char* frequency,int duration_seconds, int flash_count, char* sound_file){
+void notification(char* frequency,int duration_seconds, int flash_count, char* sound_file,char* countryCode, int hexID, int encodedLocation, time_t timeReceived){
     int delay_ms = duration_seconds * 1000 / flash_count;
     int h = true;
     
@@ -234,6 +261,8 @@ void notification(char* frequency,int duration_seconds, int flash_count, char* s
     }
 }
 
+
+//LIST FILES IN A GIVEN DIRECTORY
 void list_files(const char *path){
     struct dirent *entry; //holds directory
     struct stat file_stat; //structure to hold file information 
@@ -268,6 +297,9 @@ void list_files(const char *path){
         struct tm *tm_info = localtime(&file_stat.st_mtime);
         strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tm_info);
         printw("File: %-30s | Modified: %s\n", entry->d_name, timebuf);
+
+
+
     }
 
     closedir(dp);
@@ -293,6 +325,7 @@ int main() {
     
     //Manage which screen we're on
     int current_screen = 0;
+    
     // Main loop
     while (1) {
 
@@ -321,8 +354,7 @@ int main() {
                 if (current_screen == 1) {
                     clear();  // Clear the screen
                     //mvprintw(0, 0, "You clicked 'Beacon Detection'!");
-                    //send_alert();
-                    notification("406.025",2,20,"sarsat_alert_sound");
+                    send_data_burst();
                     refresh();
                 }
                 
