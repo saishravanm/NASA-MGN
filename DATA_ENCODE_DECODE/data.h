@@ -10,6 +10,42 @@ typedef unsigned int BNO;
 
 #pragma pack(push, 1)
 
+typedef struct COUNTRY_CODE {
+	int digits;
+	char code[4];
+} COUNTRY_CODE;
+
+COUNTRY_CODE country_codes[] = {
+    {4, "AFG"}, {8, "ALB"}, {12, "DZA"}, {20, "AND"}, {24, "AGO"}, 
+    {32, "ARG"}, {36, "AUS"}, {40, "AUT"}, {48, "BHR"}, {50, "BGD"}, 
+    {56, "BEL"}, {64, "BTN"}, {68, "BOL"}, {72, "BWA"}, {76, "BRA"}, 
+    {84, "BLZ"}, {100, "BGR"}, {108, "BDI"}, {116, "KHM"}, {120, "CMR"}, 
+    {124, "CAN"}, {132, "CPV"}, {144, "LKA"}, {152, "CHL"}, {156, "CHN"}, 
+    {170, "COL"}, {178, "COG"}, {180, "COD"}, {188, "CRI"}, {191, "HRV"}, 
+    {196, "CYP"}, {203, "CZE"}, {208, "DNK"}, {214, "DOM"}, {218, "ECU"}, 
+    {222, "SLV"}, {231, "ETH"}, {233, "EST"}, {242, "FJI"}, {246, "FIN"}, 
+    {250, "FRA"}, {268, "GEO"}, {270, "GMB"}, {276, "DEU"}, {288, "GHA"}, 
+    {300, "GRC"}, {320, "GTM"}, {324, "GIN"}, {328, "GUY"}, {332, "HTI"}, 
+    {340, "HND"}, {348, "HUN"}, {356, "IND"}, {360, "IDN"}, {364, "IRN"}, 
+    {368, "IRQ"}, {372, "IRL"}, {376, "ISR"}, {380, "ITA"}, {392, "JPN"}, 
+    {400, "JOR"}, {404, "KEN"}, {408, "PRK"}, {410, "KOR"}, {414, "KWT"}, 
+    {417, "KGZ"}, {418, "LAO"}, {422, "LBN"}, {426, "LSO"}, {428, "LVA"}, 
+    {430, "LBR"}, {434, "LBY"}, {440, "LTU"}, {442, "LUX"}, {450, "MDG"}, 
+    {454, "MWI"}, {458, "MYS"}, {462, "MDV"}, {466, "MLI"}, {470, "MLT"}, 
+    {478, "MRT"}, {480, "MUS"}, {484, "MEX"}, {496, "MNG"}, {498, "MDA"}, 
+    {504, "MAR"}, {508, "MOZ"}, {512, "OMN"}, {516, "NAM"}, {524, "NPL"}, 
+    {528, "NLD"}, {533, "ABW"}, {540, "NCL"}, {554, "NZL"}, {558, "NIC"}, 
+    {566, "NGA"}, {578, "NOR"}, {586, "PAK"}, {591, "PAN"}, {598, "PNG"}, 
+    {600, "PRY"}, {604, "PER"}, {608, "PHL"}, {616, "POL"}, {620, "PRT"}, 
+    {634, "QAT"}, {642, "ROU"}, {643, "RUS"}, {646, "RWA"}, {662, "LCA"}, 
+    {670, "VCT"}, {682, "SAU"}, {688, "SRB"}, {690, "SYC"}, {694, "SLE"}, 
+    {702, "SGP"}, {704, "VNM"}, {710, "ZAF"}, {724, "ESP"}, {752, "SWE"}, 
+    {756, "CHE"}, {764, "THA"}, {780, "TTO"}, {788, "TUN"}, {800, "UGA"}, 
+    {804, "UKR"}, {807, "MKD"}, {818, "EGY"}, {826, "GBR"}, {834, "TZA"}, 
+    {840, "USA"}, {850, "VIR"}, {854, "BFA"}, {858, "URY"}, {860, "UZB"}, 
+    {862, "VEN"}, {887, "YEM"}, {894, "ZMB"}
+};
+
 struct MMSI_BNO {
 	
 	MMSI  mmsi: 20;
@@ -96,9 +132,16 @@ typedef struct COORD {
 
 } COORD;
 
-int read_country_code(DATA *data) {
+COUNTRY_CODE read_country_code(DATA *data) {
 	
-	return (int)data->country_code;	
+	for(int i=0; i<(sizeof(country_codes)/sizeof(COUNTRY_CODE)); i++) {
+		if(country_codes[i].digits==data->country_code)
+			return country_codes[i];
+	}
+	
+	COUNTRY_CODE cc={ -1, "UNK" };
+
+	return cc;	
 
 }
 
@@ -130,7 +173,7 @@ typedef struct IDENTIFICATION {
 
 } IDENTIFICATION;
 
-IDENTIFICATION get_identification_t(DATA *data) {
+IDENTIFICATION read_identification(DATA *data) {
 
 	IDENTIFICATION id;
 
@@ -169,6 +212,8 @@ IDENTIFICATION get_identification_t(DATA *data) {
 
 }
 
+/*
+
 void print_id(IDENTIFICATION *id) {
 
 	printf("Identification Type: ");
@@ -185,6 +230,8 @@ void print_id(IDENTIFICATION *id) {
 			printf("Aircraft Address: %d\n", id->data.air_addr.air_addr);
 			break;
 		case AIRCRAFT_OP:
+			printf("AIRCRAFT OPER DESIGNATOR, SERIAL #\n");
+			printf("")
 			break;
 		case ELT_SERIAL:
 			break;
@@ -200,6 +247,8 @@ void print_id(IDENTIFICATION *id) {
 	}
 
 }
+
+*/
 
 void data_memcpy(DATA* data, char* buffer) {
 
