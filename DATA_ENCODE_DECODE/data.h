@@ -17,13 +17,17 @@ struct MMSI_BNO {
 };
 
 struct AIR_ADDRESS {
+	unsigned int air_addr: 24;
+};
+
+struct AIR_OP {
 
 	unsigned int air_oper: 15;
 	unsigned int serial_no: 9;
 
 };
 
-struct AIR_ADDRESS2 {
+struct CSTA_NO {
 	
 	unsigned int csta_no: 10;
 	unsigned int serial_no: 14;
@@ -35,7 +39,8 @@ union ID_DATA {
 	unsigned int init_buffer: 24;
 	struct MMSI_BNO mmsi_bno;
 	struct AIR_ADDRESS air_addr;
-	struct AIR_ADDRESS2 air_addr2;
+	struct AIR_OP air_op;
+	struct CSTA_NO csta;
 };
 
 typedef struct DATA {
@@ -104,8 +109,8 @@ COORD read_coordinates(DATA *data) {
 	coord.ns=data->ns?'N':'S';
 	coord.ew=data->ew?'E':'W';
 
-	coord.lat_deg=(90.0/512.0)*data->lat_deg;
-	coord.long_deg=(180.0/1024.0)*data->long_deg;
+	coord.lat_deg=0.25*data->lat_deg;
+	coord.long_deg=0.25*data->long_deg;
 
 	coord.lat_delta_min=(data->lat_sign?-1:1)*(data->lat_minutes);
 	coord.lat_delta_sec=data->lat_seconds;	
@@ -116,8 +121,85 @@ COORD read_coordinates(DATA *data) {
 	return coord;
 }
 
-enum PC { ELT_SERIAL, EPIRB_SERIAL, PLB, TEST };
+enum IDENTIFICATION_T { MMSI_BNO=2, AIRCRAFT_ADDR=3, AIRCRAFT_OP=5, ELT_SERIAL=4, EPIRB_SERIAL=6, PLB=7, MMSI_FIXED=12, TEST=14, UNKNOWN=0 };
 
+typedef struct IDENTIFICATION {
+
+	enum IDENTIFICATION_T type;
+	union ID_DATA data;
+
+} IDENTIFICATION;
+
+IDENTIFICATION get_identification_t(DATA *data) {
+
+	IDENTIFICATION id;
+
+	switch(data->pc) {
+
+		case 0b0010:
+			id.type=MMSI_BNO;
+			break;
+		case 0b0011:
+			id.type=AIRCRAFT_ADDR;
+			break;
+		case 0b0101:
+			id.type=AIRCRAFT_OP;
+			break;
+		case 0b0100:
+			id.type=ELT_SERIAL;
+			break;
+		case 0b0110:
+			id.type=EPIRB_SERIAL;
+			break;
+		case 0b0111:
+			id.type=PLB;
+			break;
+		case 0b1100:
+			id.type=MMSI_FIXED;
+			break;
+		case 0b1110:
+			id.type=TEST;
+			break;
+		default:
+			id.type=UNKNOWN;
+	}
+
+	id.data=data->id_data;
+	return id;
+
+}
+
+void print_id(IDENTIFICATION *id) {
+
+	printf("Identification Type: ");
+
+	switch(id->type) {
+
+		case MMSI_BNO:
+			printf("MMSI, BNO\n");
+			printf("Maritime Mobile Service Identity (Last 6 Digits): %d\nB. Number: %d\n", id->data.mmsi_bno.mmsi, id->data.mmsi_bno.bno);
+
+			break;
+		case AIRCRAFT_ADDR:
+			printf("AIRCRAFT ADDRESS\n");
+			printf("Aircraft Address: %d\n", id->data.air_addr.air_addr);
+			break;
+		case AIRCRAFT_OP:
+			break;
+		case ELT_SERIAL:
+			break;
+		case EPIRB_SERIAL:
+			break;
+		case PLB:
+			break;
+		case MMSI_FIXED:
+			break;
+		case TEST:
+			break;
+		default:
+	}
+
+}
 
 void data_memcpy(DATA* data, char* buffer) {
 
