@@ -51,6 +51,7 @@ int chooseOption() {
     printf("1. Save locally\n");
     printf("2. Open in Google Earth (Chrome)\n");
     printf("3. Open in Google Earth (Downloaded, requires GoogleEarth to be downloaded)\n");
+    printf("4. Open in Google Maps, saving link to GoogleMapsLinks.txt\n");
     printf("Enter your choice: ");
     scanf("%d", &choice);
     return choice;
@@ -84,6 +85,70 @@ void openInDownloadedGoogleEarth(const char *filename) {
     system(command);
 }
 
+//DONE
+// Function to extract coordinates from KML file
+int extractCoordinates(const char *filename, char *coordinates, size_t size) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("fopen");
+        return 1;
+    }
+
+    char line[1024];
+    while (fgets(line, sizeof(line), file)) {
+        char *start = strstr(line, "<coordinates>");
+        if (start) {
+            start += strlen("<coordinates>");
+            char *end = strstr(start, "</coordinates>");
+            if (end) {
+                size_t len = end - start;
+                if (len < size) {
+                    strncpy(coordinates, start, len);
+                    coordinates[len] = '\0';
+
+                    //remove trailing ",0" if present
+                    char *end = strstr(coordinates, ",0");
+                    if (end && end[2] == '\0') {
+                        *end = '\0';
+                    }
+
+                    fclose(file);
+                    return 0;
+                }
+            }
+        }
+    }
+
+    fclose(file);
+    return 1;
+}
+
+//DONE
+// Function to open the coordinates in Google Maps and save the link locally
+
+//Prototype Error: requirements for Longitude and Latitude ranges, if KML coors are outside range Maps will "not found" coords
+//See "Format your Coordinates": https://support.google.com/maps/answer/18539?hl=en&co=GENIE.Platform%3DDesktop
+void openInGoogleMaps(const char *filename) {
+    char coordinates[1024];
+    if (extractCoordinates(filename, coordinates, sizeof(coordinates)) == 0) {
+        char command[2048];
+        char url[2048];
+        snprintf(url, sizeof(url), "https://www.google.com/maps?q=%s", coordinates);
+        snprintf(command, sizeof(command), "cmd.exe /C start chrome \"%s\"", url);
+        system(command);
+
+        // Save the URL to GoogleMapsLinks.txt
+        FILE *file = fopen("GoogleMapsLinks.txt", "a");
+        if (file == NULL) {
+            perror("fopen");
+            return;
+        }
+        fprintf(file, "%s\n", url);
+        fclose(file);
+    } else {
+        fprintf(stderr, "Failed to extract coordinates from KML file\n");
+    }
+}
 
 int main() {
     char filename[256];
@@ -98,6 +163,8 @@ int main() {
         openInChromeGoogleEarth(filename);
     } else if (choice == 3) {
         openInDownloadedGoogleEarth(filename);
+    } else if (choice == 4) {
+        openInGoogleMaps(filename);
     } else {
         printf("Invalid choice.\n");
     }
