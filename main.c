@@ -231,41 +231,40 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
 			   								   coords->ew, coords->long_deg,
 											   coords->lat_delta_min, coords->lat_delta_sec,
 											   coords->long_delta_min, coords->long_delta_sec);
-            fprintf(file, "%s: %d\n", sdb_text[2], hexID);
 	    switch(id->type) {
 	   	
 		case MMSI_BNO:
-            		fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+            		fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
 				       	"Maritime Mobile Service Identity (Last 6 Digits)-BNO",
 				       	id->data.mmsi_bno.mmsi, id->data.mmsi_bno.bno);
 		case AIRCRAFT_ADDR:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d", 
+        	    	fprintf(file, "%s: [s] %d\n", sdb_text[2],, 
 					"Aircraft 24-bit Address", 
 					id->data.air_addr.air_addr);
 		case AIRCRAFT_OP:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
 				       	"Aircraft OPER Designator-Serial No", 
 					id->data.air_op.air_oper, id->data.air_op.serial_no);
 		case ELT_SERIAL:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
 				       	"C/S TA No [ELT Serial]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
 		case EPIRB_SERIAL:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
 				       	"C/S TA No [EPIRB_SERIAL]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
 		case PLB:	
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
 				       	"C/S TA No [PLB]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
 		case MMSI_FIXED:
-	            	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d",
+	            	fprintf(file, "%s: [s] %d\n", sdb_text[2],,
 				       	"Maritime Mobile Service Identity (Last 6 Digits) [FIXED]",
 					id->data.mmsi_bno.mmsi);
 		case TEST:
- 	           	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "TESTING...");
+ 	           	fprintf(file, "%s: [s]\n", sdb_text[2], "TESTING...");
 		default:	
-            		fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "UNKNOWN FORMAT");
+            		fprintf(file, "%s: [s]\n", sdb_text[2],, "UNKNOWN FORMAT");
 
 
 	   	
@@ -283,6 +282,7 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
 }
 
 //TEST FUNCTION TO MAKE SURE EVERYTHING WORKS
+/*
 void send_data_burst(){
     time_t current_time = time(NULL);
 
@@ -299,17 +299,29 @@ void send_data_burst(){
     printw("KML Generated!");
 
 }
+*/
 
 //search for a beacon
 void beacon_search(){
     //call mihir's search functions -> if 406.025 then return hex packet, if 121.65 then return True or False
-    //if we find a 406.025, call hex decoder, then notification 
-    //call hex_decode on hex packet 
+    //if we find a 406.025
+	/* Mihir code
+ 		DATA data; //Initialize a data object
+   		data_memcpy(&data, char[18] buffer); //pass by reference the empty data object, and the buffer with the data (This function will populate the struct with the binary fields)
+ 	*/
+
+	//This is just creating seperate objects which handle a readable format for printing data
+	COORD coord=read_coordinates(&data);
+	COUNTRY_CODE cc=read_country_code(&data);
+	IDENTIFICATION id=read_identification(&data);
+	time_t current_time=time(NULL); //Grabbing the current time one the system
+	
+    //call hex_decode on hex packet ?????? I don't think we need this anymore because you have access to all the data through the properties of the DATA struct
         //hex_decode function 1 -> should return the country code, beacon hex id, encoded location, and time recieved 
         //hex_decode function 2 -> should return the decoded latitude, longitude, country code, and beacon id, and timestamp
     
-    //if 406.025 found (example)
-    //notification("406.025",2,20,"sarsat_alert_sound","US", 123456, 789012, current_time);
+    //if 406.025 found (example) // IF/ELSE Implemented by Mihir since I do not know how you are able to detect the type of signal
+    	notification("406.025",2,20,"sarsat_alert_sound", &cc, &id, &id, current_time);
     //else if 121.65 found
     //notification("121.65",2,20,"sarsat_alert_sound");
 
@@ -319,7 +331,7 @@ void beacon_search(){
 }
 
 //display notification
-void notification(char* frequency,int duration_seconds, int flash_count, char* sound_file,char* countryCode, int hexID, int encodedLocation, time_t timeReceived){
+void notification(char* frequency,int duration_seconds, int flash_count, char* sound_file, COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coords, time_t timeReceived){
     int delay_ms = duration_seconds * 1000 / flash_count;
     int h = true;
     
@@ -338,7 +350,7 @@ void notification(char* frequency,int duration_seconds, int flash_count, char* s
     }
     clear();
     if(strcmp(frequency,"406.025") == 0){
-        send_data_burst();
+        short_data_burst(countryCode, id, coords, timeRecieved);
     }
 }
 
@@ -435,7 +447,7 @@ int main() {
                 if (current_screen == 1) {
                     clear();  // Clear the screen
                     //mvprintw(0, 0, "You clicked 'Beacon Detection'!");
-                    send_data_burst();
+                    beacon_detect();
                     refresh();
                 }
                 
