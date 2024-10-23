@@ -7,9 +7,18 @@
 #include <time.h>
 #include "kml_generation.c"
 #include "data.h"
+#include <iio.h>
+#include <stdbool.h>
+#include <math.h>
 
 #define NUM_OPTIONS 3
 #define NUM_FIELDS 4
+#define TARGET_FREQUENCY 2121650000ULL  // Frequency to check (121.65 MHz)
+#define SAMPLE_COUNT 1024              // Number of samples to capture
+#define SIGNAL_DETECTION_THRESHOLD 500 // Threshold for signal detection
+#define SARSAT_FREQUENCY 406025000ULL  // 406.025 MHz
+#define OUTPUT_SIZE 18                 // Output size for char[18]
+
 
 //define custom struct for a button
 typedef struct {
@@ -299,23 +308,212 @@ void send_data_burst(){
     printw("KML Generated!");
 
 }
+int check_frequency(struct iio_context *context, uint64_t frequency) {
+    struct iio_device *receiver_device, *phy_device;
+    struct iio_channel *i_channel, *q_channel, *lo_channel;
+    struct iio_buffer *sample_buffer;
+    ssize_t buffer_bytes;
+    char *data_pointer, *data_end;
+    ptrdiff_t step_size;
+
+    // Find the RX device
+    receiver_device = iio_context_find_device(context, "cf-ad9361-lpc");
+    if (!receiver_device) {
+        fprintf(stderr, "Unable to find RX device\n");
+        return -1;  // Error finding RX device
+    }
+
+    // Find the PHY device to configure hardware settings
+    phy_device = iio_context_find_device(context, "ad9361-phy");
+    if (!phy_device) {
+        fprintf(stderr, "Unable to find PHY device\n");
+        return -2;  // Error finding PHY device
+    }
+
+    // Set the LO frequency to the desired frequency
+    lo_channel = iio_device_find_channel(phy_device, "altvoltage0", true);
+    if (!lo_channel) {
+        fprintf(stderr, "Unable to find LO channel\n");
+        return -3;  // Error finding LO channel
+    }
+
+    if (iio_channel_attr_write_longlong(lo_channel, "frequency", frequency) < 0) {
+        fprintf(stderr, "Failed to set LO frequency to %llu Hz\n", frequency);
+        return -4;  // Error setting LO frequency
+    }
+
+    // Enable the RX voltage channels for I (voltage0) and Q (voltage1)
+    i_channel = iio_device_find_channel(receiver_device, "voltage0", false);
+    q_channel = iio_device_find_channel(receiver_device, "voltage1", false);
+    if (!i_channel || !q_channel) {
+        fprintf(stderr, "Unable to find RX channels\n");
+        return -5;  // Error finding RX channels
+    }
+    iio_channel_enable(i_channel);
+    iio_channel_enable(q_channel);
+
+    // Create a buffer to receive samples from the RX device
+    sample_buffer = iio_device_create_buffer(receiver_device, SAMPLE_COUNT, false);
+    if (!sample_buffer) {
+        fprintf(stderr, "Unable to create RX buffer\n");
+        return -6;  // Error creating buffer
+    }
+
+    // Fill the buffer with received samples
+    buffer_bytes = iio_buffer_refill(sample_buffer);
+    if (buffer_bytes < 0) {
+        fprintf(stderr, "Error refilling RX buffer: %zd\n", buffer_bytes);
+        iio_buffer_destroy(sample_buffer);
+        return -7;  // Error refilling buffer
+    }
+
+    // Process the samples and calculate the magnitude
+    step_size = iio_buffer_step(sample_buffer);
+    data_end = iio_buffer_end(sample_buffer);
+    double total_magnitude = 0;
+    int16_t i_sample_value, q_sample_value;
+    for (data_pointer = iio_buffer_first(sample_buffer, i_channel); data_pointer < data_end; data_pointer += step_size) {
+        int16_t *sample_pointer = (int16_t*)data_pointer;
+        i_sample_value = sample_pointer[0];  // I sample
+        q_sample_value = sample_pointer[1];  // Q sample
+        double sample_magnitude = sqrt((double)i_sample_value * i_sample_value + (double)q_sample_value * q_sample_value);
+        total_magnitude += sample_magnitude;
+    }
+
+    // Calculate the average magnitude
+    double average_magnitude = total_magnitude / SAMPLE_COUNT;
+    printf("Average magnitude: %f\n", average_magnitude);
+
+    // Determine if signal is detected based on the threshold
+    if (average_magnitude > SIGNAL_DETECTION_THRESHOLD) {
+        iio_buffer_destroy(sample_buffer);
+        return 1;  // Signal detected
+    }
+
+    // Clean up
+    iio_buffer_destroy(sample_buffer);
+    return 0;  // No signal detected
+}
+char* detect_sarsat_signal(struct iio_context *context, uint64_t frequency) {
+    struct iio_device *receiver_device, *phy_device;
+    struct iio_channel *i_channel, *q_channel, *lo_channel;
+    struct iio_buffer *sample_buffer;
+    ssize_t buffer_bytes;
+    static char output[OUTPUT_SIZE];
+
+    // Find the RX device
+    receiver_device = iio_context_find_device(context, "cf-ad9361-lpc");
+    if (!receiver_device) {
+        fprintf(stderr, "Unable to find RX device\n");
+        strncpy(output, "Error: RX device", OUTPUT_SIZE);
+        return output;
+    }
+
+    // Find the PHY device to configure hardware settings
+    phy_device = iio_context_find_device(context, "ad9361-phy");
+    if (!phy_device) {
+        fprintf(stderr, "Unable to find PHY device\n");
+        strncpy(output, "Error: PHY device", OUTPUT_SIZE);
+        return output;
+    }
+
+    // Set the LO frequency to the desired SARSAT frequency
+    lo_channel = iio_device_find_channel(phy_device, "altvoltage0", true);
+    if (!lo_channel) {
+        fprintf(stderr, "Unable to find LO channel\n");
+        strncpy(output, "Error: LO channel", OUTPUT_SIZE);
+        return output;
+    }
+
+    if (iio_channel_attr_write_longlong(lo_channel, "frequency", frequency) < 0) {
+        fprintf(stderr, "Failed to set LO frequency to %llu Hz\n", frequency);
+        strncpy(output, "Error: Set LO freq", OUTPUT_SIZE);
+        return output;
+    }
+
+    // Enable the RX voltage channels for I (voltage0) and Q (voltage1)
+    i_channel = iio_device_find_channel(receiver_device, "voltage0", false);
+    q_channel = iio_device_find_channel(receiver_device, "voltage1", false);
+    if (!i_channel || !q_channel) {
+        fprintf(stderr, "Unable to find RX channels\n");
+        strncpy(output, "Error: RX channels", OUTPUT_SIZE);
+        return output;
+    }
+    iio_channel_enable(i_channel);
+    iio_channel_enable(q_channel);
+
+    // Create a buffer to receive samples from the RX device
+    sample_buffer = iio_device_create_buffer(receiver_device, SAMPLE_COUNT, false);
+    if (!sample_buffer) {
+        fprintf(stderr, "Unable to create RX buffer\n");
+        strncpy(output, "Error: Create buffer", OUTPUT_SIZE);
+        return output;
+    }
+
+    // Fill the buffer with received samples
+    buffer_bytes = iio_buffer_refill(sample_buffer);
+    if (buffer_bytes < 0) {
+        fprintf(stderr, "Error refilling RX buffer: %zd\n", buffer_bytes);
+        iio_buffer_destroy(sample_buffer);
+        strncpy(output, "Error: Refill buffer", OUTPUT_SIZE);
+        return output;
+    }
+
+    // Check if buffer is empty (no valid data)
+    if (buffer_bytes == 0) {
+        fprintf(stderr, "Empty buffer received\n");
+        iio_buffer_destroy(sample_buffer);
+        strncpy(output, "Error: Empty buffer", OUTPUT_SIZE);
+        return output;
+    }
+
+    // Example: Return raw signal data as "RAW_SIGNAL_XXXX" placeholder
+    strncpy(output, "RAW_SIGNAL_DATA", OUTPUT_SIZE);  // Replace with actual signal data
+
+    // Clean up
+    iio_buffer_destroy(sample_buffer);
+    return output;
+}
 
 //search for a beacon
+//to prevent any performance issues, the program only searches for each beacon once, the final plan is to have them continuously searching for the beacon and Sarsat in a thread
 void beacon_search(){
-    //call mihir's search functions -> if 406.025 then return hex packet, if 121.65 then return True or False
-    //if we find a 406.025, call hex decoder, then notification 
-    //call hex_decode on hex packet 
-        //hex_decode function 1 -> should return the country code, beacon hex id, encoded location, and time recieved 
-        //hex_decode function 2 -> should return the decoded latitude, longitude, country code, and beacon id, and timestamp
-    
-    //if 406.025 found (example)
-    //notification("406.025",2,20,"sarsat_alert_sound","US", 123456, 789012, current_time);
-    //else if 121.65 found
-    //notification("121.65",2,20,"sarsat_alert_sound");
+   struct iio_context *context;
 
-    //then we call Taaha's KML generate function using hex_decode function 2
+    // Initialize the IIO context using USB connection
+    context = iio_create_context_from_uri("usb:");
+    if (!context) {
+        fprintf(stderr, "Unable to create IIO context\n");
+        return;
+    }
+   int beacon_check = check_frequency(context, TARGET_FREQUENCY);
+   if (beacon_check == 1) {
+        printf("Signal detected at %llu Hz\n", TARGET_FREQUENCY);
+    } else if (beacon_check == 0) {
+        printf("No signal detected at %llu Hz\n", TARGET_FREQUENCY);
+    } else {
+        // Print the error code returned from check_frequency
+        printf("Error: code %d\n", beacon_check);
+    }
+    char *sarsat_result = detect_sarsat_signal(context, SARSAT_FREQUENCY);
+     if (strcmp(sarsat_result, "RAW_SIGNAL_DATA") != 0) {
+        printf("SARSAT signal detected: %s\n", sarsat_result);
 
+        // Prepare the DATA structure to hold the decoded SARSAT signal
+        DATA data;
+        data_memcpy(&data, sarsat_result);  // Use data_memcpy to decode the SARSAT signal
 
+        // Extract necessary fields from the DATA structure
+        COUNTRY_CODE cc = read_country_code(&data);     // Get the country code
+        COORD coords = read_coordinates(&data);         // Get the coordinates
+        time_t current_time = time(NULL);               // Capture the current time
+
+        // Send the short data burst with the decoded information
+        short_data_burst(&cc, NULL, &coords, current_time);
+    } else {
+        printf("No SARSAT signal detected.\n");
+    }
+    iio_context_destroy(context);
 }
 
 //display notification
