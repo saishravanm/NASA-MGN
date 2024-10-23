@@ -159,32 +159,40 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
             		mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"Maritime Mobile Service Identity (Last 6 Digits)-BNO",
 				       	id->data.mmsi_bno.mmsi, id->data.mmsi_bno.bno);
+			break;
 		case AIRCRAFT_ADDR:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d", 
 					"Aircraft 24-bit Address", 
 					id->data.air_addr.air_addr);
+			break;
 		case AIRCRAFT_OP:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"Aircraft OPER Designator-Serial No", 
 					id->data.air_op.air_oper, id->data.air_op.serial_no);
+			break;
 		case ELT_SERIAL:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"C/S TA No [ELT Serial]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case EPIRB_SERIAL:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"C/S TA No [EPIRB_SERIAL]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case PLB:	
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"C/S TA No [PLB]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case MMSI_FIXED:
 	            	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d",
 				       	"Maritime Mobile Service Identity (Last 6 Digits) [FIXED]",
 					id->data.mmsi_bno.mmsi);
+			break;
 		case TEST:
  	           	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "TESTING...");
+			break;
 		default:	
             		mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "UNKNOWN FORMAT");
 
@@ -193,7 +201,7 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
 	    }
             //Encoded Location
             draw_button(notification_buttons[2].y,notification_buttons[2].x, sdb_text[2] ,true);
-            mvprintw(notification_buttons[2].y, notification_buttons[2].x+12, "%c-%f:%c-%f [LAT:%02d:%02d-LONG:%02d:%02d]", coords->ns, coords->lat_deg,
+            mvprintw(notification_buttons[2].y, notification_buttons[2].x+12, "%c-%.2f:%c-%.2f [LAT:%02d:%02d-LONG:%02d:%02d]", coords->ns, coords->lat_deg,
 			   										 coords->ew, coords->long_deg,
 													 coords->lat_delta_min, coords->lat_delta_sec,
 													 coords->long_delta_min, coords->long_delta_sec);
@@ -227,44 +235,55 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
                 return;
             }
             fprintf(file, "%s: %s-%d\n", sdb_text[0], countryCode->code, countryCode->digits);
-            fprintf(file, "%s: % %c-%f:%c-%f [LAT:%02d:%02d-LONG:%02d:%02d]\n", sdb_text[1], coords->ns, coords->lat_deg,
+            fprintf(file, "%s: % %c-%.2f:%c-%.2f [LAT:%02d:%02d-LONG:%02d:%02d]\n", sdb_text[1], coords->ns, coords->lat_deg,
 			   								   coords->ew, coords->long_deg,
 											   coords->lat_delta_min, coords->lat_delta_sec,
 											   coords->long_delta_min, coords->long_delta_sec);
+	    
+	    
+
 	    switch(id->type) {
 	   	
 		case MMSI_BNO:
-            		fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
+            		fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"Maritime Mobile Service Identity (Last 6 Digits)-BNO",
 				       	id->data.mmsi_bno.mmsi, id->data.mmsi_bno.bno);
+			break;
 		case AIRCRAFT_ADDR:
-        	    	fprintf(file, "%s: [s] %d\n", sdb_text[2],, 
+        	    	fprintf(file, "%s: [s] %d\n", sdb_text[2], 
 					"Aircraft 24-bit Address", 
 					id->data.air_addr.air_addr);
+			break;
 		case AIRCRAFT_OP:
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"Aircraft OPER Designator-Serial No", 
 					id->data.air_op.air_oper, id->data.air_op.serial_no);
+			break;
 		case ELT_SERIAL:
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [ELT Serial]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case EPIRB_SERIAL:
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [EPIRB_SERIAL]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case PLB:	
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],,
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [PLB]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case MMSI_FIXED:
-	            	fprintf(file, "%s: [s] %d\n", sdb_text[2],,
+	            	fprintf(file, "%s: [s] %d\n", sdb_text[2],
 				       	"Maritime Mobile Service Identity (Last 6 Digits) [FIXED]",
 					id->data.mmsi_bno.mmsi);
+			break;
 		case TEST:
  	           	fprintf(file, "%s: [s]\n", sdb_text[2], "TESTING...");
+			break;
 		default:	
-            		fprintf(file, "%s: [s]\n", sdb_text[2],, "UNKNOWN FORMAT");
+            		fprintf(file, "%s: [s]\n", sdb_text[2], "UNKNOWN FORMAT");
 
 
 	   	
@@ -301,34 +320,8 @@ void send_data_burst(){
 }
 */
 
-//search for a beacon
-void beacon_search(){
-    //call mihir's search functions -> if 406.025 then return hex packet, if 121.65 then return True or False
-    //if we find a 406.025
-	/* Mihir code
- 		DATA data; //Initialize a data object
-   		data_memcpy(&data, char[18] buffer); //pass by reference the empty data object, and the buffer with the data (This function will populate the struct with the binary fields)
- 	*/
-
-	//This is just creating seperate objects which handle a readable format for printing data
-	COORD coord=read_coordinates(&data);
-	COUNTRY_CODE cc=read_country_code(&data);
-	IDENTIFICATION id=read_identification(&data);
-	time_t current_time=time(NULL); //Grabbing the current time one the system
-	
-    //call hex_decode on hex packet ?????? I don't think we need this anymore because you have access to all the data through the properties of the DATA struct
-        //hex_decode function 1 -> should return the country code, beacon hex id, encoded location, and time recieved 
-        //hex_decode function 2 -> should return the decoded latitude, longitude, country code, and beacon id, and timestamp
-    
-    //if 406.025 found (example) // IF/ELSE Implemented by Mihir since I do not know how you are able to detect the type of signal
-    	notification("406.025",2,20,"sarsat_alert_sound", &cc, &id, &id, current_time);
-    //else if 121.65 found
-    //notification("121.65",2,20,"sarsat_alert_sound");
-
-    //then we call Taaha's KML generate function using hex_decode function 2
 
 
-}
 
 //display notification
 void notification(char* frequency,int duration_seconds, int flash_count, char* sound_file, COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coords, time_t timeReceived){
@@ -350,8 +343,41 @@ void notification(char* frequency,int duration_seconds, int flash_count, char* s
     }
     clear();
     if(strcmp(frequency,"406.025") == 0){
-        short_data_burst(countryCode, id, coords, timeRecieved);
+        short_data_burst(countryCode, id, coords, timeReceived);
     }
+}
+
+
+//search for a beacon
+void beacon_search(){
+    //call mihir's search functions -> if 406.025 then return hex packet, if 121.65 then return True or False
+    //if we find a 406.025
+ 	DATA data; //Initialize a data object
+	/* Mihir code
+   		The two line of code below is what you will have to edit, replace the "Test buffer" to be filled with your signal data and if the name
+		is different, just change it in the data_memcpy argument. Lastly, you will need to implement the IF/ELSE statement below. 	
+ 	*/	
+	
+	char buffer[18]={0xff, 0xfe, 0x2f, 0x97, 0x0e, 0x00, 0x80, 0x01, 0x27, 0x29, 0x9b, 0x1e, 0x21, 0xf6, 0x00, 0x65, 0x79, 0x69 }; //Test buffer
+	data_memcpy(&data, buffer);
+
+	//This is just creating seperate objects which handle a readable format for printing data
+	COORD coord=read_coordinates(&data);
+	COUNTRY_CODE cc=read_country_code(&data);
+	IDENTIFICATION id=read_identification(&data);
+	time_t current_time=time(NULL); //Grabbing the current time one the system
+	
+    //call hex_decode on hex packet ?????? I don't think we need this anymore because you have access to all the data through the properties of the DATA struct
+        //hex_decode function 1 -> should return the country code, beacon hex id, encoded location, and time recieved 
+        //hex_decode function 2 -> should return the decoded latitude, longitude, country code, and beacon id, and timestamp
+    
+    //if 406.025 found (example) // IF/ELSE Implemented by Mihir since I do not know how you are able to detect the type of signal
+    	notification("406.025",2,20,"sarsat_alert_sound", &cc, &id, &coord, current_time);
+    //else if 121.65 found
+    //notification("121.65",2,20,"sarsat_alert_sound");
+
+    //then we call Taaha's KML generate function using hex_decode function 2
+
 }
 
 
@@ -447,7 +473,7 @@ int main() {
                 if (current_screen == 1) {
                     clear();  // Clear the screen
                     //mvprintw(0, 0, "You clicked 'Beacon Detection'!");
-                    beacon_detect();
+                    beacon_search();
                     refresh();
                 }
                 
