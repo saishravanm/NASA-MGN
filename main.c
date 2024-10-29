@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <math.h>
 
+
 #define NUM_OPTIONS 3
 #define NUM_FIELDS 4
 #define TARGET_FREQUENCY 2121650000ULL  // Frequency to check (121.65 MHz)
@@ -168,32 +169,40 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
             		mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"Maritime Mobile Service Identity (Last 6 Digits)-BNO",
 				       	id->data.mmsi_bno.mmsi, id->data.mmsi_bno.bno);
+			break;
 		case AIRCRAFT_ADDR:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d", 
 					"Aircraft 24-bit Address", 
 					id->data.air_addr.air_addr);
+			break;
 		case AIRCRAFT_OP:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"Aircraft OPER Designator-Serial No", 
 					id->data.air_op.air_oper, id->data.air_op.serial_no);
+			break;
 		case ELT_SERIAL:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"C/S TA No [ELT Serial]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case EPIRB_SERIAL:
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"C/S TA No [EPIRB_SERIAL]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case PLB:	
         	    	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
 				       	"C/S TA No [PLB]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case MMSI_FIXED:
 	            	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d",
 				       	"Maritime Mobile Service Identity (Last 6 Digits) [FIXED]",
 					id->data.mmsi_bno.mmsi);
+			break;
 		case TEST:
  	           	mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "TESTING...");
+			break;
 		default:	
             		mvprintw(notification_buttons[1].y, notification_buttons[1].x+12, "UNKNOWN FORMAT");
 
@@ -202,7 +211,7 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
 	    }
             //Encoded Location
             draw_button(notification_buttons[2].y,notification_buttons[2].x, sdb_text[2] ,true);
-            mvprintw(notification_buttons[2].y, notification_buttons[2].x+12, "%c-%f:%c-%f [LAT:%02d:%02d-LONG:%02d:%02d]", coords->ns, coords->lat_deg,
+            mvprintw(notification_buttons[2].y, notification_buttons[2].x+12, "%c-%.2f:%c-%.2f [LAT:%02d:%02d-LONG:%02d:%02d]", coords->ns, coords->lat_deg,
 			   										 coords->ew, coords->long_deg,
 													 coords->lat_delta_min, coords->lat_delta_sec,
 													 coords->long_delta_min, coords->long_delta_sec);
@@ -236,45 +245,55 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
                 return;
             }
             fprintf(file, "%s: %s-%d\n", sdb_text[0], countryCode->code, countryCode->digits);
-            fprintf(file, "%s: % %c-%f:%c-%f [LAT:%02d:%02d-LONG:%02d:%02d]\n", sdb_text[1], coords->ns, coords->lat_deg,
+            fprintf(file, "%s: % %c-%.2f:%c-%.2f [LAT:%02d:%02d-LONG:%02d:%02d]\n", sdb_text[1], coords->ns, coords->lat_deg,
 			   								   coords->ew, coords->long_deg,
 											   coords->lat_delta_min, coords->lat_delta_sec,
 											   coords->long_delta_min, coords->long_delta_sec);
-            fprintf(file, "%s: %d\n", sdb_text[2], hexID);
+	    
+	    
+
 	    switch(id->type) {
 	   	
 		case MMSI_BNO:
-            		fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+            		fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"Maritime Mobile Service Identity (Last 6 Digits)-BNO",
 				       	id->data.mmsi_bno.mmsi, id->data.mmsi_bno.bno);
+			break;
 		case AIRCRAFT_ADDR:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d", 
+        	    	fprintf(file, "%s: [s] %d\n", sdb_text[2], 
 					"Aircraft 24-bit Address", 
 					id->data.air_addr.air_addr);
+			break;
 		case AIRCRAFT_OP:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"Aircraft OPER Designator-Serial No", 
 					id->data.air_op.air_oper, id->data.air_op.serial_no);
+			break;
 		case ELT_SERIAL:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [ELT Serial]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case EPIRB_SERIAL:
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [EPIRB_SERIAL]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case PLB:	
-        	    	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d-%d",
+        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [PLB]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
+			break;
 		case MMSI_FIXED:
-	            	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "%s: %d",
+	            	fprintf(file, "%s: [s] %d\n", sdb_text[2],
 				       	"Maritime Mobile Service Identity (Last 6 Digits) [FIXED]",
 					id->data.mmsi_bno.mmsi);
+			break;
 		case TEST:
- 	           	fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "TESTING...");
+ 	           	fprintf(file, "%s: [s]\n", sdb_text[2], "TESTING...");
+			break;
 		default:	
-            		fprintf(notification_buttons[1].y, notification_buttons[1].x+12, "UNKNOWN FORMAT");
+            		fprintf(file, "%s: [s]\n", sdb_text[2], "UNKNOWN FORMAT");
 
 
 	   	
@@ -308,6 +327,8 @@ void send_data_burst(){
     printw("KML Generated!");
 
 }
+
+//search for a beacon
 int check_frequency(struct iio_context *context, uint64_t frequency) {
     struct iio_device *receiver_device, *phy_device;
     struct iio_channel *i_channel, *q_channel, *lo_channel;
