@@ -14,10 +14,10 @@
 
 #define NUM_OPTIONS 3
 #define NUM_FIELDS 4
-#define TARGET_FREQUENCY 2121650000ULL  // Frequency to check (121.65 MHz)
+#define TARGET_FREQUENCY 2400000000ULL  // Frequency to check (121.65 MHz)
 #define SAMPLE_COUNT 1024              // Number of samples to capture
-#define SIGNAL_DETECTION_THRESHOLD 500 // Threshold for signal detection
-#define SARSAT_FREQUENCY 406025000ULL  // 406.025 MHz
+#define SIGNAL_DETECTION_THRESHOLD 95 // Threshold for signal detection
+#define SARSAT_FREQUENCY 2406025000ULL  // 406.025 MHz
 #define OUTPUT_SIZE 18                 // Output size for char[18]
 
 
@@ -244,8 +244,8 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
                 perror("Unable to open file");
                 return;
             }
-            fprintf(file, "%s: %s-%d\n", sdb_text[0], countryCode->code, countryCode->digits);
-            fprintf(file, "%s: % %c-%.2f:%c-%.2f [LAT:%02d:%02d-LONG:%02d:%02d]\n", sdb_text[1], coords->ns, coords->lat_deg,
+            printw(file, "%s: %s-%d\n", sdb_text[0], countryCode->code, countryCode->digits);
+            printw(file, "%s: % %c-%.2f:%c-%.2f [LAT:%02d:%02d-LONG:%02d:%02d]\n", sdb_text[1], coords->ns, coords->lat_deg,
 			   								   coords->ew, coords->long_deg,
 											   coords->lat_delta_min, coords->lat_delta_sec,
 											   coords->long_delta_min, coords->long_delta_sec);
@@ -255,51 +255,51 @@ void short_data_burst(COUNTRY_CODE *countryCode, IDENTIFICATION *id, COORD *coor
 	    switch(id->type) {
 	   	
 		case MMSI_BNO:
-            		fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
+            		printw(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"Maritime Mobile Service Identity (Last 6 Digits)-BNO",
 				       	id->data.mmsi_bno.mmsi, id->data.mmsi_bno.bno);
 			break;
 		case AIRCRAFT_ADDR:
-        	    	fprintf(file, "%s: [s] %d\n", sdb_text[2], 
+        	    	printw(file, "%s: [s] %d\n", sdb_text[2], 
 					"Aircraft 24-bit Address", 
 					id->data.air_addr.air_addr);
 			break;
 		case AIRCRAFT_OP:
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
+        	    	printw(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"Aircraft OPER Designator-Serial No", 
 					id->data.air_op.air_oper, id->data.air_op.serial_no);
 			break;
 		case ELT_SERIAL:
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
+        	    	printw(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [ELT Serial]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
 			break;
 		case EPIRB_SERIAL:
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
+        	    	printw(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [EPIRB_SERIAL]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
 			break;
 		case PLB:	
-        	    	fprintf(file, "%s: [s] %d-$d\n", sdb_text[2],
+        	    	printw(file, "%s: [s] %d-$d\n", sdb_text[2],
 				       	"C/S TA No [PLB]",
 					id->data.csta.csta_no, id->data.csta.serial_no);
 			break;
 		case MMSI_FIXED:
-	            	fprintf(file, "%s: [s] %d\n", sdb_text[2],
+	            	printw(file, "%s: [s] %d\n", sdb_text[2],
 				       	"Maritime Mobile Service Identity (Last 6 Digits) [FIXED]",
 					id->data.mmsi_bno.mmsi);
 			break;
 		case TEST:
- 	           	fprintf(file, "%s: [s]\n", sdb_text[2], "TESTING...");
+ 	           	printw(file, "%s: [s]\n", sdb_text[2], "TESTING...");
 			break;
 		default:	
-            		fprintf(file, "%s: [s]\n", sdb_text[2], "UNKNOWN FORMAT");
+            		printw(file, "%s: [s]\n", sdb_text[2], "UNKNOWN FORMAT");
 
 
 	   	
 	    }
 
-            fprintf(file, "%s: %s\n", sdb_text[3], time_str);
+            printw(file, "%s: %s\n", sdb_text[3], time_str);
 
             fclose(file);
 
@@ -495,7 +495,6 @@ char* detect_sarsat_signal(struct iio_context *context, uint64_t frequency) {
     iio_buffer_destroy(sample_buffer);
     return output;
 }
-
 //search for a beacon
 //to prevent any performance issues, the program only searches for each beacon once, the final plan is to have them continuously searching for the beacon and Sarsat in a thread
 void beacon_search(){
@@ -504,21 +503,21 @@ void beacon_search(){
     // Initialize the IIO context using USB connection
     context = iio_create_context_from_uri("usb:");
     if (!context) {
-        fprintf(stderr, "Unable to create IIO context\n");
+        printw("Unable to create IIO context\n");
         return;
     }
    int beacon_check = check_frequency(context, TARGET_FREQUENCY);
    if (beacon_check == 1) {
-        printf("Signal detected at %llu Hz\n", TARGET_FREQUENCY);
+        printw("Signal detected at %llu Hz\n", TARGET_FREQUENCY);
     } else if (beacon_check == 0) {
-        printf("No signal detected at %llu Hz\n", TARGET_FREQUENCY);
+        printw("No signal detected at %llu Hz\n", TARGET_FREQUENCY);
     } else {
         // Print the error code returned from check_frequency
-        printf("Error: code %d\n", beacon_check);
+        printw("Error: code %d\n", beacon_check);
     }
     char *sarsat_result = detect_sarsat_signal(context, SARSAT_FREQUENCY);
      if (strcmp(sarsat_result, "RAW_SIGNAL_DATA") != 0) {
-        printf("SARSAT signal detected: %s\n", sarsat_result);
+        printw("Sarsat signal detected: %s\n", sarsat_result);
 
         // Prepare the DATA structure to hold the decoded SARSAT signal
         DATA data;
@@ -531,8 +530,9 @@ void beacon_search(){
 
         // Send the short data burst with the decoded information
         short_data_burst(&cc, NULL, &coords, current_time);
-    } else {
-        printf("No SARSAT signal detected.\n");
+    } 
+    else {
+        printw("No SARSAT signal detected.\n");
     }
     iio_context_destroy(context);
 }
@@ -655,6 +655,7 @@ int main() {
                     clear();  // Clear the screen
                     //mvprintw(0, 0, "You clicked 'Beacon Detection'!");
                     send_data_burst();
+                    //beacon_search();
                     refresh();
                 }
                 
