@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <pthread.h>
 #include "kml_generation.c"
 #include "data.h"
 
@@ -132,14 +133,24 @@ int is_notif_pressed(MEVENT event, Button *button){
 //play sound given sound file
 void play_sound(const char *sound_file){
     char command[256];
-    snprintf(command, sizeof(command), "aplay %s", sound_file);
+    snprintf(command, sizeof(command), "aplay ./sound_files/sarsat_alert_sound.wav > /dev/null 2>&1");
+    //printw("Executing command: %s\n", command);
 
     int result = system(command);
 
     if(result != 0){
         printw("Failed to play sound: %s\n", sound_file);
     }
-    printw("played sound!");
+   else{
+     // printw("played sound!");
+ 
+}
+
+}
+
+void* sound_thread(void *arg){
+play_sound("asd");
+return NULL;
 
 }
 
@@ -332,15 +343,19 @@ void notification(char* frequency,int duration_seconds, int flash_count, char* s
     snprintf(freq_label, sizeof(freq_label), "%s mHz beacon found", frequency);
 
     char sf[1024];
-    //snprintf(sf, sizeof(sf),"./sound_files/%s.wav",sound_file);
+    //snprintf(sf, sizeof(sf),"./sound_files/%s.wav",sound_file); 
 
-    play_sound(sf);
+    pthread_t sound_tid;
+    pthread_create(&sound_tid, NULL,sound_thread, NULL);
+
+    //play_sound(sf);
     for(int i = 0; i < flash_count; i++){
         draw_button(8, 24, freq_label, h);
         refresh(); 
         napms(delay_ms);
         h = !h;
     }
+    pthread_join(sound_tid, NULL);
     clear();
     if(strcmp(frequency,"406.025") == 0){
         short_data_burst(countryCode, id, coords, timeReceived);
@@ -372,7 +387,7 @@ void beacon_search(){
         //hex_decode function 2 -> should return the decoded latitude, longitude, country code, and beacon id, and timestamp
     
     //if 406.025 found (example) // IF/ELSE Implemented by Mihir since I do not know how you are able to detect the type of signal
-    	notification("406.025",2,20,"sarsat_alert_sound", &cc, &id, &coord, current_time);
+    	notification("406.025",2,20,"/home/mbajaj/Documents/sound_files/sarsat_alert_sound.wav", &cc, &id, &coord, current_time);
     //else if 121.65 found
     //notification("121.65",2,20,"sarsat_alert_sound");
 
